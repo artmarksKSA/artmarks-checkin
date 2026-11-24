@@ -2,15 +2,10 @@
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;font-family:Almarai,system-ui,sans-serif;background:var(--t) url(pat.png);background-size:560px;color:#fff;min-height:100vh;min-height:100dvh}
-header{display:flex;justify-content:space-between;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 12px) max(18px,env(safe-area-inset-right,0px)) 8px max(18px,env(safe-area-inset-left,0px))}
-header img{height:90px}
-header.hero{display:block;text-align:center;position:relative;padding-top:calc(env(safe-area-inset-top,0px) + 30px);padding-bottom:6px}
-header.hero img{height:clamp(170px,42vw,250px);margin:0 auto;display:block}
-header.hero .l{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);left:14px;min-height:40px;padding:6px 18px;border-radius:999px}
 button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:12px 20px;min-height:50px;background:#fff;color:var(--t);font-weight:800;-webkit-appearance:none;appearance:none}
 button.l{background:transparent;color:#fff;border:1.5px solid #ffffffb0}
 button:disabled{opacity:.5}
-main{max-width:520px;margin:0 auto;padding:14px 16px calc(env(safe-area-inset-bottom,0px) + 30px)}
+main{max-width:520px;margin:0 auto;padding:22px 16px calc(env(safe-area-inset-bottom,0px) + 30px)}
 .panel{background:#ffffff14;border:1px solid #ffffff2e;border-radius:20px;padding:22px 20px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 h1{margin:.1em 0;font-size:1.65rem;font-weight:800}
 .sub{color:var(--soft);margin:0 0 14px;line-height:1.7}
@@ -35,3 +30,6 @@ input[type=date]{color-scheme:dark}
 .row button{min-height:40px;padding:6px 16px}
 .badge{background:#fff;color:var(--t);border-radius:999px;padding:4px 12px;font-weight:800;font-size:.9rem}
 .panel+.panel{margin-top:14px}
+header{display:block;text-align:center;position:relative;padding:calc(env(safe-area-inset-top,0px) + 30px) 16px 30px}
+header img{height:clamp(150px,38vw,210px);margin:0 auto;display:block}
+header .l{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);left:14px;min-height:40px;padding:6px 18px;border-radius:999px;background:transparent;color:#fff;border:1.5px solid #ffffffb0}
