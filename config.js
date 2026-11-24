@@ -1,1 +1,1 @@
-window.CFG={API:'ضعي-هنا-رابط-Google-الذي-ينتهي-بـ-/exec'};
+window.CFG={URL:'https://sbsxhdwmgyjsfyzzoaki.supabase.co',KEY:'ضعي-المفتاح-هنا'};
