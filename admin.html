@@ -1,0 +1,51 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#035157"><title>ArtMarks Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css"></head><body>
+<header><img src="logo.png" alt="بصمات فن"><button id="out" class="l hide">خروج</button></header>
+<main>
+<section id="lg" class="panel"><h1>لوحة الإدارة</h1>
+<label>كلمة مرور الإدارة</label><input id="pw" type="password" autocomplete="off">
+<div class="err" id="er"></div><button class="btn" id="in">دخول</button></section>
+<div id="app" class="hide">
+<section class="panel"><h1>المعرض الحالي</h1><p class="sub" id="cur"></p>
+<div id="st"><div>المسجلون<b id="a">0</b></div><div>الداخلون<b id="b">0</b></div></div>
+<button class="btn l" id="csv">تنزيل قائمة الزوار (Excel)</button></section>
+<section class="panel"><h1>معرض جديد</h1>
+<label>اسم المعرض بالعربي</label><input id="n1"><label>Exhibition name (English)</label><input id="n2" style="direction:ltr;text-align:start">
+<label>تاريخ المعرض</label><input id="dt" type="date">
+<div class="err" id="er2"></div><button class="btn" id="sv">حفظ وتفعيل</button></section>
+<section class="panel"><h1>المعارض</h1><div id="list"></div></section>
+<p class="sub" id="qt"></p>
+</div></main>
+<script src="config.js"></script>
+<script>
+const $=i=>document.getElementById(i);
+const api=async(a,d={})=>{try{const r=await fetch(CFG.API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({a,pass,...d})});return await r.json()}catch(e){return{ok:false,err:'net'}}};
+let pass=sessionStorage.getItem('ap')||'';
+async function load(){
+ const r=await api('events');
+ if(!r.ok||!r.events){sessionStorage.removeItem('ap');$('er').textContent=r.err=='locked'?'محاولات كثيرة، انتظري 5 دقائق':'كلمة المرور غير صحيحة';return false}
+ $('lg').classList.add('hide');$('app').classList.remove('hide');$('out').classList.remove('hide');
+ const act=r.events.find(e=>e.active);
+ $('cur').textContent=act?act.name_ar+' – '+act.event_date:'لا يوجد معرض مفعّل — أضيفي معرضاً جديداً';
+ const L=$('list');L.innerHTML='';
+ r.events.forEach(e=>{const row=document.createElement('div');row.className='row';const t=document.createElement('span');t.textContent=e.name_ar+' · '+e.event_date;row.append(t);
+  if(e.active){const b=document.createElement('span');b.className='badge';b.textContent='مفعّل';row.append(b)}
+  else{const b=document.createElement('button');b.className='l';b.textContent='تفعيل';b.onclick=async()=>{b.disabled=true;await api('activate',{id:e.id});load()};row.append(b)}
+  L.append(row)});
+ $('qt').textContent='رسائل الإيميل المتبقية اليوم: '+(r.brevo?'عبر Brevo':r.quota);
+ const s=await api('stats');if(s.ok){$('a').textContent=s.total;$('b').textContent=s.inside}
+ return true}
+$('in').onclick=async()=>{$('er').textContent='';pass=$('pw').value.trim();sessionStorage.setItem('ap',pass);load()};
+$('out').onclick=()=>{sessionStorage.removeItem('ap');location.reload()};
+$('sv').onclick=async()=>{const e=$('er2');e.textContent='';
+ if(!$('n1').value.trim()||!$('n2').value.trim()||!$('dt').value)return e.textContent='أكملي الاسمين والتاريخ';
+ $('sv').disabled=true;const r=await api('save_event',{name_ar:$('n1').value,name_en:$('n2').value,date:$('dt').value});$('sv').disabled=false;
+ if(!r.ok)return e.textContent='تعذّر الحفظ';['n1','n2','dt'].forEach(i=>$(i).value='');load()};
+$('csv').onclick=async()=>{const r=await api('visitors');if(!r.ok)return;
+ const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+ const rows=[['serial','name','phone','email','registered','checked_in'].join(',')].concat(r.rows.map(x=>[x.serial,x.name,x.phone,x.email,x.registered,x.checked_in].map(q).join(',')));
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+rows.join('\n')],{type:'text/csv'}));a.download='visitors.csv';a.click()};
+if(pass)load();
+</script></body></html>

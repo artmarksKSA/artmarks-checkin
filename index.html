@@ -18,13 +18,13 @@
 <section id="s3" class="hide"><canvas id="cv"></canvas>
 <button class="btn" id="dl" data-i="dl"></button><p class="sub" data-i="hint" style="margin-top:10px"></p><button class="btn l" id="nw" data-i="again"></button></section>
 </div></main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script src="config.js"></script>
 <script>
-const $=i=>document.getElementById(i),sb=window.supabase.createClient(CFG.URL,CFG.KEY);
-const T={ar:{title:'تسجيل الزوار',name:'الاسم الكامل',phone:'رقم الجوال',email:'البريد الإلكتروني',send:'إرسال رمز التحقق',code:'الرمز المرسل إلى بريدك',verify:'تأكيد وإصدار البطاقة',dl:'تحميل البطاقة',again:'تسجيل زائر آخر',hint:'على الآيفون: اختر «حفظ الصورة» من قائمة المشاركة.',eN:'اكتب اسمك الحقيقي (اسمان على الأقل)',eP:'رقم الجوال غير صحيح',eM:'البريد الإلكتروني غير صحيح',eC:'الرمز غير صحيح أو منتهي',eE:'التسجيل مغلق حالياً',eX:'تعذّر الإرسال، حاول بعد قليل',sent:'أرسلنا رمز التحقق إلى '},
-en:{title:'Visitor registration',name:'Full name',phone:'Mobile number',email:'Email',send:'Send verification code',code:'Code sent to your email',verify:'Verify and get my pass',dl:'Download pass',again:'Register another visitor',hint:'On iPhone: choose “Save Image” from the share sheet.',eN:'Enter your real name (at least two words)',eP:'Invalid mobile number',eM:'Invalid email address',eC:'Wrong or expired code',eE:'Registration is closed',eX:'Could not send. Please try again',sent:'We sent a verification code to '}};
+const $=i=>document.getElementById(i);
+const api=async(a,d={})=>{try{const r=await fetch(CFG.API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({a,...d})});return await r.json()}catch(e){return{ok:false,err:'net'}}};
+const T={ar:{title:'تسجيل الزوار',name:'الاسم الكامل',phone:'رقم الجوال',email:'البريد الإلكتروني',send:'إرسال رمز التحقق',code:'الرمز المرسل إلى بريدك',verify:'تأكيد وإصدار البطاقة',dl:'تحميل البطاقة',again:'تسجيل زائر آخر',hint:'على الآيفون: اختر «حفظ الصورة» من قائمة المشاركة.',eN:'اكتب اسمك الحقيقي (اسمان على الأقل)',eP:'رقم الجوال غير صحيح',eM:'البريد الإلكتروني غير صحيح',eC:'الرمز غير صحيح أو منتهي',eE:'التسجيل مغلق حالياً',eX:'تعذّر الإرسال، حاول بعد قليل',eR:'محاولات كثيرة لهذا البريد، حاول بعد ساعة',eB:'النظام مشغول، حاول بعد دقيقة',eQ:'تعذّر الإرسال حالياً، راجع فريق التنظيم',sent:'أرسلنا رمز التحقق إلى '},
+en:{title:'Visitor registration',name:'Full name',phone:'Mobile number',email:'Email',send:'Send verification code',code:'Code sent to your email',verify:'Verify and get my pass',dl:'Download pass',again:'Register another visitor',hint:'On iPhone: choose “Save Image” from the share sheet.',eN:'Enter your real name (at least two words)',eP:'Invalid mobile number',eM:'Invalid email address',eC:'Wrong or expired code',eE:'Registration is closed',eX:'Could not send. Please try again',eR:'Too many attempts for this email. Try again in an hour',eB:'System busy. Try again in a minute',eQ:'Cannot send right now. Please ask the staff',sent:'We sent a verification code to '}};
 let L='ar',ev=null,last=null;
 function ui(){document.documentElement.lang=L;document.documentElement.dir=L=='ar'?'rtl':'ltr';
  document.querySelectorAll('[data-i]').forEach(e=>e.textContent=T[L][e.dataset.i]);
@@ -42,17 +42,16 @@ $('go').onclick=async()=>{
  if(!ev)return e.textContent=T[L].eE;if(!okName(nm))return e.textContent=T[L].eN;
  if(!okPhone(ph))return e.textContent=T[L].eP;if(!okMail(em))return e.textContent=T[L].eM;
  $('go').disabled=true;
- const{error}=await sb.auth.signInWithOtp({email:em,options:{shouldCreateUser:true}});
- $('go').disabled=false;if(error)return e.textContent=T[L].eX;
+ const r=await api('send_code',{name:nm,phone:ph,email:em,lang:L});
+ $('go').disabled=false;
+ if(!r.ok){const m={closed:'eE',bad:'eN',rate:'eR',busy:'eB',quota:'eQ'}[r.err]||'eX';return e.textContent=T[L][m]}
  $('sent').textContent=T[L].sent+em;$('s1').classList.add('hide');$('s2').classList.remove('hide')};
 $('vf').onclick=async()=>{
  const e=$('e2');e.textContent='';$('vf').disabled=true;
- const{error}=await sb.auth.verifyOtp({email:em,token:$('code').value.trim(),type:'email'});
- if(error){$('vf').disabled=false;return e.textContent=T[L].eC}
- const{data,error:e3}=await sb.rpc('register_visitor',{p_name:nm,p_phone:ph});
- await sb.auth.signOut();$('vf').disabled=false;
- if(e3)return e.textContent=T[L].eX;
- last=data;await card(data);$('s2').classList.add('hide');$('s3').classList.remove('hide')};
+ const r=await api('verify',{email:em,code:$('code').value});
+ $('vf').disabled=false;
+ if(!r.ok)return e.textContent=T[L][r.err=='closed'?'eE':r.err=='code'?'eC':'eX'];
+ last=r.card;await card(last);$('s2').classList.add('hide');$('s3').classList.remove('hide')};
 $('nw').onclick=()=>{last=null;['nm','ph','em','code'].forEach(i=>$(i).value='');$('s3').classList.add('hide');$('s1').classList.remove('hide')};
 $('dl').onclick=()=>$('cv').toBlob(async b=>{
  const f=new File([b],'ArtMarks-'+String(last.serial).padStart(6,'0')+'.png',{type:'image/png'});
@@ -79,5 +78,5 @@ async function card(r){
  x.fillStyle='#fff';x.beginPath();x.roundRect?x.roundRect(ox-14,oy-14,S+28,S+28,14):x.rect(ox-14,oy-14,S+28,S+28);x.fill();x.fillStyle='#06211E';
  for(let i=0;i<n;i++)for(let j=0;j<n;j++)if(q.isDark(i,j))x.fillRect(ox+j*s,oy+i*s,s,s);
  x.fillStyle='#d6e6e6';x.font='700 26px Almarai';x.fillText('artmarks.net',W/2,1255)}
-(async()=>{ui();const{data}=await sb.rpc('get_active_event');ev=data;ui();if(!ev)$('e1').textContent=T[L].eE})();
+(async()=>{ui();const r=await api('event');ev=r.ok?r.ev:null;ui();if(!ev)$('e1').textContent=T[L].eE})();
 </script></body></html>

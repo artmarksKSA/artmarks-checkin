@@ -5,39 +5,34 @@
 <header><img src="logo.png" alt="بصمات فن"><button id="out" class="l hide">خروج</button></header>
 <main>
 <section id="lg" class="panel"><h1>دخول فريق البوابة</h1>
-<label>البريد الإلكتروني</label><input id="em" type="email"><label>كلمة المرور</label><input id="pw" type="password">
+<label>رمز البوابة</label><input id="pin" type="password" autocomplete="off">
 <div class="err" id="er"></div><button class="btn" id="in">دخول</button></section>
 <section id="app" class="panel hide"><div id="st"><div>المسجلون<b id="a">0</b></div><div>الداخلون<b id="b">0</b></div></div>
-<div id="rd"></div><div class="err" id="er2"></div><button class="btn l" id="ex">تصدير القائمة (Excel)</button></section>
+<div id="rd"></div><div class="err" id="er2"></div></section>
 </main><div id="ov"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="config.js"></script>
 <script>
-const $=i=>document.getElementById(i),sb=window.supabase.createClient(CFG.URL,CFG.KEY);
-let sc=null,busy=false;
-async function stats(){const{data,error}=await sb.rpc('stats');if(error||!data)return false;$('a').textContent=data.total;$('b').textContent=data.inside;return true}
+const $=i=>document.getElementById(i);
+const api=async(a,d={})=>{try{const r=await fetch(CFG.API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({a,...d})});return await r.json()}catch(e){return{ok:false,err:'net'}}};
+let pin=sessionStorage.getItem('pin')||'',busy=false,started=false;
+async function stats(){const r=await api('stats',{pin});if(!r.ok)return false;$('a').textContent=r.total;$('b').textContent=r.inside;return true}
 async function show(){
- if(!await stats()){await sb.auth.signOut();$('er').textContent='هذا الحساب غير مصرّح له بالبوابة';return}
+ if(!await stats()){sessionStorage.removeItem('pin');$('er').textContent='الرمز غير صحيح';return}
  $('lg').classList.add('hide');$('app').classList.remove('hide');$('out').classList.remove('hide');
- sc=new Html5Qrcode('rd');sc.start({facingMode:'environment'},{fps:10,qrbox:240},onScan,()=>{}).catch(()=>$('er2').textContent='اسمحي للمتصفح باستخدام الكاميرا');
+ if(started)return;started=true;
+ const sc=new Html5Qrcode('rd');sc.start({facingMode:'environment'},{fps:10,qrbox:240},onScan,()=>{}).catch(()=>$('er2').textContent='اسمحي للمتصفح باستخدام الكاميرا');
  setInterval(stats,15000)}
-$('in').onclick=async()=>{$('er').textContent='';
- const{error}=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});
- if(error)return $('er').textContent='بيانات الدخول غير صحيحة';show()};
-$('out').onclick=async()=>{await sb.auth.signOut();location.reload()};
+$('in').onclick=()=>{$('er').textContent='';pin=$('pin').value.trim();sessionStorage.setItem('pin',pin);show()};
+$('out').onclick=()=>{sessionStorage.removeItem('pin');location.reload()};
 async function onScan(t){
  if(busy)return;busy=true;
  const ok=/^[0-9a-f-]{36}$/i.test(t);
- const r=ok?(await sb.rpc('check_in',{p_ticket:t})).data:null;
- const d=r||{status:'invalid'};
+ const r=ok?await api('checkin',{pin,ticket:t}):null;
+ const d=r&&r.ok?r:{status:'invalid'};
  const m={ok:['#1b7f3b','مسموح بالدخول'],duplicate:['#1f5fa8','تم مسحها سابقاً'],invalid:['#b3261e','بطاقة غير صالحة']}[d.status]||['#b3261e','بطاقة غير صالحة'];
- const o=$('ov');o.style.background=m[0];o.innerHTML=m[1]+(d.name?'<br>'+d.name+'<br><small>No. '+String(d.serial).padStart(6,'0')+'</small>':'');o.style.display='flex';
- stats();setTimeout(()=>{o.style.display='none'},2200);setTimeout(()=>busy=false,2600)}
-$('ex').onclick=async()=>{
- const{data}=await sb.rpc('visitors_export');if(!data)return;
- const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
- const rows=[['serial','name','phone','email','registered','checked_in'].join(',')].concat(data.map(r=>[r.serial,r.name,r.phone,r.email,r.registered,r.checked_in].map(q).join(',')));
- const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+rows.join('\n')],{type:'text/csv'}));a.download='visitors.csv';a.click()};
-sb.auth.getSession().then(({data:{session}})=>{if(session)show()});
+ const o=$('ov');o.style.background=m[0];o.innerHTML='';o.append(m[1]);
+ if(d.name){o.append(document.createElement('br'),d.name,document.createElement('br'));const s=document.createElement('small');s.textContent='No. '+String(d.serial).padStart(6,'0');o.append(s)}
+ o.style.display='flex';stats();setTimeout(()=>{o.style.display='none'},2200);setTimeout(()=>busy=false,2600)}
+if(pin)show();
 </script></body></html>

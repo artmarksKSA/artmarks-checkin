@@ -30,3 +30,8 @@ canvas{width:100%;height:auto;border-radius:16px;box-shadow:0 10px 30px #0006;ma
 #st div{flex:1;background:#ffffff1a;border:1px solid #ffffff2e;border-radius:12px;padding:10px;text-align:center}
 #st b{display:block;font-size:1.8rem}
 #rd{border-radius:12px;overflow:hidden}
+input[type=date]{color-scheme:dark}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid #ffffff2e}
+.row button{min-height:40px;padding:6px 16px}
+.badge{background:#fff;color:var(--t);border-radius:999px;padding:4px 12px;font-weight:800;font-size:.9rem}
+.panel+.panel{margin-top:14px}
