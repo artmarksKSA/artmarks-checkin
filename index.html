@@ -1,82 +1,53 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#035157"><title>ArtMarks</title>
-<link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css"></head><body>
-<header class="hero"><button id="lang" class="l">EN</button><img src="logo.png" alt="بصمات فن"></header>
-<main><div class="panel">
-<h1 data-i="title"></h1><p class="sub" id="evn"></p>
-<section id="s1">
-<label data-i="name"></label><input id="nm" autocomplete="name">
-<label data-i="phone"></label><input id="ph" type="tel" autocomplete="tel">
-<label data-i="email"></label><input id="em" type="email" autocomplete="email">
-<div class="err" id="e1"></div><button class="btn" id="go" data-i="send"></button>
-</section>
-<section id="s2" class="hide">
-<p class="sub" id="sent"></p><label data-i="code"></label><input id="code" inputmode="numeric" maxlength="8" autocomplete="one-time-code">
-<div class="err" id="e2"></div><button class="btn" id="vf" data-i="verify"></button>
-</section>
-<section id="s3" class="hide"><canvas id="cv"></canvas>
-<button class="btn" id="dl" data-i="dl"></button><p class="sub" data-i="hint" style="margin-top:10px"></p><button class="btn l" id="nw" data-i="again"></button></section>
-</div></main>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="config.js"></script>
-<script>
-const $=i=>document.getElementById(i);
-const api=async(a,d={})=>{try{const r=await fetch(CFG.API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({a,...d})});return await r.json()}catch(e){return{ok:false,err:'net'}}};
-const T={ar:{title:'تسجيل الزوار',name:'الاسم الكامل',phone:'رقم الجوال',email:'البريد الإلكتروني',send:'إرسال رمز التحقق',code:'الرمز المرسل إلى بريدك',verify:'تأكيد وإصدار البطاقة',dl:'تحميل البطاقة',again:'تسجيل زائر آخر',hint:'على الآيفون: اختر «حفظ الصورة» من قائمة المشاركة.',eN:'اكتب اسمك الحقيقي (اسمان على الأقل)',eP:'رقم الجوال غير صحيح',eM:'البريد الإلكتروني غير صحيح',eC:'الرمز غير صحيح أو منتهي',eE:'التسجيل مغلق حالياً',eX:'تعذّر الإرسال، حاول بعد قليل',eR:'محاولات كثيرة لهذا البريد، حاول بعد ساعة',eB:'النظام مشغول، حاول بعد دقيقة',eQ:'تعذّر الإرسال حالياً، راجع فريق التنظيم',sent:'أرسلنا رمز التحقق إلى '},
-en:{title:'Visitor registration',name:'Full name',phone:'Mobile number',email:'Email',send:'Send verification code',code:'Code sent to your email',verify:'Verify and get my pass',dl:'Download pass',again:'Register another visitor',hint:'On iPhone: choose “Save Image” from the share sheet.',eN:'Enter your real name (at least two words)',eP:'Invalid mobile number',eM:'Invalid email address',eC:'Wrong or expired code',eE:'Registration is closed',eX:'Could not send. Please try again',eR:'Too many attempts for this email. Try again in an hour',eB:'System busy. Try again in a minute',eQ:'Cannot send right now. Please ask the staff',sent:'We sent a verification code to '}};
-let L='ar',ev=null,last=null;
-function ui(){document.documentElement.lang=L;document.documentElement.dir=L=='ar'?'rtl':'ltr';
- document.querySelectorAll('[data-i]').forEach(e=>e.textContent=T[L][e.dataset.i]);
- $('lang').textContent=L=='ar'?'EN':'عربي';if(ev)$('evn').textContent=L=='ar'?ev.name_ar:ev.name_en;
- if(last)card(last)}
-$('lang').onclick=()=>{L=L=='ar'?'en':'ar';ui()};
-const BAD=['mailinator.com','tempmail.com','10minutemail.com','guerrillamail.com','yopmail.com','trashmail.com','sharklasers.com','fakeinbox.com','throwaway.email'];
-const okName=n=>{const w=n.split(' ');return /^[\p{L}\p{M}'.-]+( [\p{L}\p{M}'.-]+)+$/u.test(n)&&n.length>=5&&n.length<=60&&w.every(x=>x.length>=2)&&!/(.)\1{3,}/u.test(n)};
-const okPhone=p=>{const d=p.replace(/\D/g,'');return /^\+?\d{8,15}$/.test(p)&&!/^(\d)\1+$/.test(d)&&!/(0123|1234|2345|3456|4567|5678|6789)/.test(d)&&!(/^05/.test(p)&&p.length!=10)};
-const okMail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e)&&!BAD.includes(e.split('@')[1]);
-let nm,ph,em;
-$('go').onclick=async()=>{
- nm=$('nm').value.trim().replace(/\s+/g,' ');ph=$('ph').value.replace(/[\s-]/g,'').replace(/^00/,'+');em=$('em').value.trim().toLowerCase();
- const e=$('e1');e.textContent='';
- if(!ev)return e.textContent=T[L].eE;if(!okName(nm))return e.textContent=T[L].eN;
- if(!okPhone(ph))return e.textContent=T[L].eP;if(!okMail(em))return e.textContent=T[L].eM;
- $('go').disabled=true;
- const r=await api('send_code',{name:nm,phone:ph,email:em,lang:L});
- $('go').disabled=false;
- if(!r.ok){const m={closed:'eE',bad:'eN',rate:'eR',busy:'eB',quota:'eQ'}[r.err]||'eX';return e.textContent=T[L][m]}
- $('sent').textContent=T[L].sent+em;$('s1').classList.add('hide');$('s2').classList.remove('hide')};
-$('vf').onclick=async()=>{
- const e=$('e2');e.textContent='';$('vf').disabled=true;
- const r=await api('verify',{email:em,code:$('code').value});
- $('vf').disabled=false;
- if(!r.ok)return e.textContent=T[L][r.err=='closed'?'eE':r.err=='code'?'eC':'eX'];
- last=r.card;await card(last);$('s2').classList.add('hide');$('s3').classList.remove('hide')};
-$('nw').onclick=()=>{last=null;['nm','ph','em','code'].forEach(i=>$(i).value='');$('s3').classList.add('hide');$('s1').classList.remove('hide')};
-$('dl').onclick=()=>$('cv').toBlob(async b=>{
- const f=new File([b],'ArtMarks-'+String(last.serial).padStart(6,'0')+'.png',{type:'image/png'});
- if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});return}catch(e){if(e.name=='AbortError')return}}
- const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=f.name;a.click()});
-async function card(r){
- const c=$('cv'),x=c.getContext('2d'),W=900,H=1300;c.width=W;c.height=H;
- await document.fonts.load('800 50px Almarai');await document.fonts.load('400 30px Almarai');
- const ld=s=>new Promise(o=>{const i=new Image();i.onload=()=>o(i);i.src=s});
- const[im,pt]=await Promise.all([ld('logo.png'),ld('pat.png')]);
- x.fillStyle='#035157';x.fillRect(0,0,W,H);x.fillStyle=x.createPattern(pt,'repeat');x.fillRect(0,0,W,H);
- x.strokeStyle='#ffffff59';x.lineWidth=2;x.beginPath();x.roundRect?x.roundRect(26,26,W-52,H-52,34):x.rect(26,26,W-52,H-52);x.stroke();
- const lh=360,lw=lh*im.width/im.height;x.drawImage(im,(W-lw)/2,70,lw,lh);
- x.textAlign='center';x.direction='rtl';
- const t=(s,y,sz,col,w=700)=>{x.fillStyle=col;let f=sz;do{x.font=w+' '+f+'px Almarai';f-=2}while(x.measureText(s).width>780&&f>20);x.fillText(s,W/2,y)};
- const d=new Date(r.event_date+'T00:00:00').toLocaleDateString(L=='ar'?'ar-SA-u-ca-gregory-nu-latn':'en-GB',{year:'numeric',month:'long',day:'numeric'});
- t(L=='ar'?'بطاقة دخول':'ENTRY PASS',510,30,'#a9d0d3');
- t(r.name,600,62,'#fff',800);
- t(L=='ar'?r.name_ar:r.name_en,685,36,'#e4efef');t(d,745,28,'#e4efef',400);
- x.fillStyle='#ffffff4d';x.fillRect(110,805,680,2);
- x.fillStyle='#fff';x.beginPath();x.roundRect?x.roundRect((W-380)/2,835,380,84,42):x.rect((W-380)/2,835,380,84);x.fill();
- t('No. '+String(r.serial).padStart(6,'0'),895,46,'#035157',800);
- const q=qrcode(0,'M');q.addData(r.ticket);q.make();const n=q.getModuleCount(),s=Math.floor(230/n),S=s*n,ox=(W-S)/2,oy=965;
- x.fillStyle='#fff';x.beginPath();x.roundRect?x.roundRect(ox-14,oy-14,S+28,S+28,14):x.rect(ox-14,oy-14,S+28,S+28);x.fill();x.fillStyle='#06211E';
- for(let i=0;i<n;i++)for(let j=0;j<n;j++)if(q.isDark(i,j))x.fillRect(ox+j*s,oy+i*s,s,s);
- x.fillStyle='#d6e6e6';x.font='700 26px Almarai';x.fillText('artmarks.net',W/2,1255)}
-(async()=>{ui();const r=await api('event');ev=r.ok?r.ev:null;ui();if(!ev)$('e1').textContent=T[L].eE})();
-</script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#F1ECDA" />
+    <title>ArtMarks</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-type="guest">
+    <header>
+      <button id="lang" class="l">EN</button><img src="logo-teal.png" alt="بصمات فن" />
+    </header>
+    <main>
+      <div class="panel">
+        <h1 id="ttl"></h1>
+        <p class="sub" id="evn"></p>
+        <section id="s1">
+          <label data-i="name"></label><input id="nm" autocomplete="name" />
+          <label data-i="phone"></label><input id="ph" type="tel" autocomplete="tel" />
+          <label data-i="email"></label><input id="em" type="email" autocomplete="email" />
+          <div class="err" id="e1"></div>
+          <button class="btn" id="go" data-i="send"></button>
+        </section>
+        <section id="s2" class="hide">
+          <p class="sub" id="sent"></p>
+          <label data-i="code"></label
+          ><input id="code" inputmode="numeric" maxlength="8" autocomplete="one-time-code" />
+          <div class="err" id="e2"></div>
+          <button class="btn" id="vf" data-i="verify"></button>
+        </section>
+        <section id="s3" class="hide">
+          <canvas id="cv"></canvas>
+          <button class="btn" id="dl" data-i="dl"></button>
+          <button class="btn l" id="sh" data-i="share"></button>
+          <button class="btn l" id="ml" data-i="mail"></button>
+          <div class="ok" id="mm"></div>
+          <div class="err" id="e3"></div>
+          <p class="sub" data-i="hint" style="margin-top: 10px"></p>
+          <button class="btn l" id="nw" data-i="again"></button>
+        </section>
+      </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+    <script src="config.js"></script>
+    <script src="common.js"></script>
+    <script src="register.js"></script>
+  </body>
+</html>

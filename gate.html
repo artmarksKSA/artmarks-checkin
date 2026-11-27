@@ -1,38 +1,135 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#035157"><title>ArtMarks Gate</title>
-<link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css"></head><body>
-<header><img src="logo.png" alt="بصمات فن"><button id="out" class="l hide">خروج</button></header>
-<main>
-<section id="lg" class="panel"><h1>دخول فريق البوابة</h1>
-<label>رمز البوابة</label><input id="pin" type="password" autocomplete="off">
-<div class="err" id="er"></div><button class="btn" id="in">دخول</button></section>
-<section id="app" class="panel hide"><div id="st"><div>المسجلون<b id="a">0</b></div><div>الداخلون<b id="b">0</b></div></div>
-<div id="rd"></div><div class="err" id="er2"></div></section>
-</main><div id="ov"></div>
-<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="config.js"></script>
-<script>
-const $=i=>document.getElementById(i);
-const api=async(a,d={})=>{try{const r=await fetch(CFG.API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({a,...d})});return await r.json()}catch(e){return{ok:false,err:'net'}}};
-let pin=sessionStorage.getItem('pin')||'',busy=false,started=false;
-async function stats(){const r=await api('stats',{pin});if(!r.ok)return false;$('a').textContent=r.total;$('b').textContent=r.inside;return true}
-async function show(){
- if(!await stats()){sessionStorage.removeItem('pin');$('er').textContent='الرمز غير صحيح';return}
- $('lg').classList.add('hide');$('app').classList.remove('hide');$('out').classList.remove('hide');
- if(started)return;started=true;
- const sc=new Html5Qrcode('rd');sc.start({facingMode:'environment'},{fps:10,qrbox:240},onScan,()=>{}).catch(()=>$('er2').textContent='اسمحي للمتصفح باستخدام الكاميرا');
- setInterval(stats,15000)}
-$('in').onclick=()=>{$('er').textContent='';pin=$('pin').value.trim();sessionStorage.setItem('pin',pin);show()};
-$('out').onclick=()=>{sessionStorage.removeItem('pin');location.reload()};
-async function onScan(t){
- if(busy)return;busy=true;
- const ok=/^[0-9a-f-]{36}$/i.test(t);
- const r=ok?await api('checkin',{pin,ticket:t}):null;
- const d=r&&r.ok?r:{status:'invalid'};
- const m={ok:['#1b7f3b','مسموح بالدخول'],duplicate:['#1f5fa8','تم مسحها سابقاً'],invalid:['#b3261e','بطاقة غير صالحة']}[d.status]||['#b3261e','بطاقة غير صالحة'];
- const o=$('ov');o.style.background=m[0];o.innerHTML='';o.append(m[1]);
- if(d.name){o.append(document.createElement('br'),d.name,document.createElement('br'));const s=document.createElement('small');s.textContent='No. '+String(d.serial).padStart(6,'0');o.append(s)}
- o.style.display='flex';stats();setTimeout(()=>{o.style.display='none'},2200);setTimeout(()=>busy=false,2600)}
-if(pin)show();
-</script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#F1ECDA" />
+    <title>ArtMarks</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="staff">
+    <header><img src="logo-teal.png" alt="بصمات فن" /></header>
+    <main>
+      <section id="lg" class="panel">
+        <h1>دخول فريق البوابة</h1>
+        <label>رمز البوابة</label><input id="pin" type="password" autocomplete="off" />
+        <div class="err" id="er"></div>
+        <button class="btn" id="in">دخول</button>
+      </section>
+      <section id="pick" class="panel hide">
+        <h1>اختاري البوابة</h1>
+        <p class="sub">افتحي الرابط المناسب لهذا الجهاز.</p>
+        <a href="?type=guest"><button class="btn">بوابة الضيوف</button></a>
+        <a href="?type=artist"><button class="btn">بوابة الفنانين المشاركين</button></a>
+        <a href="walkin.html"><button class="btn l">التسجيل الفوري</button></a>
+      </section>
+      <section id="app" class="panel hide">
+        <h1 id="gt"></h1>
+        <div id="st">
+          <div>المسجلون<b id="a">0</b></div>
+          <div>الداخلون<b id="b">0</b></div>
+        </div>
+        <div id="rd"></div>
+        <div class="err" id="er2"></div>
+        <a href="walkin.html"><button class="btn l">تسجيل فوري لزائر جديد</button></a>
+        <button class="btn l" id="out">خروج</button>
+      </section>
+    </main>
+    <div id="ov"></div>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="config.js"></script>
+    <script src="common.js"></script>
+    <script>
+      const $ = (i) => document.getElementById(i),
+        api = AM.api;
+      const GT = new URLSearchParams(location.search).get("type");
+      const gate = ["guest", "artist"].includes(GT) ? GT : "";
+      const NM = { guest: "الضيوف", artist: "الفنانين المشاركين" };
+      let pin = sessionStorage.getItem("pin") || "",
+        busy = false,
+        started = false;
+      async function stats() {
+        const r = await api("stats", { pin });
+        if (!r.ok) return false;
+        const s = r[gate || "guest"];
+        $("a").textContent = s.total;
+        $("b").textContent = s.inside;
+        return true;
+      }
+      async function show() {
+        if (!(await stats())) {
+          sessionStorage.removeItem("pin");
+          $("er").textContent = "الرمز غير صحيح";
+          return;
+        }
+        $("lg").classList.add("hide");
+        if (!gate) {
+          $("pick").classList.remove("hide");
+          return;
+        }
+        $("gt").textContent = "بوابة " + NM[gate];
+        $("app").classList.remove("hide");
+        if (started) return;
+        started = true;
+        const sc = new Html5Qrcode("rd");
+        sc.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          onScan,
+          () => {},
+        ).catch(() => ($("er2").textContent = "اسمحي للمتصفح باستخدام الكاميرا"));
+        setInterval(stats, 15000);
+      }
+      $("in").onclick = () => {
+        $("er").textContent = "";
+        pin = $("pin").value.trim();
+        sessionStorage.setItem("pin", pin);
+        show();
+      };
+      $("out").onclick = () => {
+        sessionStorage.removeItem("pin");
+        location.href = location.pathname;
+      };
+      async function onScan(t) {
+        if (busy || !/^[0-9a-f-]{36}$/i.test(t)) return;
+        busy = true;
+        const r = await api("checkin", { pin, ticket: t, gate });
+        const d = r && r.ok ? r : { status: "invalid" };
+        const other = d.type === "artist" ? "الفنانين المشاركين" : "الضيوف";
+        const m = {
+          ok: ["#1b7f3b", "مسموح بالدخول"],
+          duplicate: ["#1f5fa8", "تم مسحها سابقاً"],
+          invalid: ["#b3261e", "بطاقة غير صالحة"],
+          wrong_gate: [
+            "#6b3fa0",
+            "هذه بطاقة " + (d.type === "artist" ? "فنان" : "ضيف") + "<br>توجّه إلى بوابة " + other,
+          ],
+        }[d.status] || ["#b3261e", "بطاقة غير صالحة"];
+        const o = $("ov");
+        o.style.background = m[0];
+        o.innerHTML = "";
+        const h = document.createElement("div");
+        h.innerHTML = m[1];
+        o.append(h);
+        if (d.name) {
+          o.append(d.name);
+          o.append(document.createElement("br"));
+          const s = document.createElement("small");
+          s.textContent = (d.type === "artist" ? "فنان مشارك" : "ضيف") + " · " + AM.pad(d);
+          o.append(s);
+        }
+        o.style.display = "flex";
+        stats();
+        setTimeout(() => {
+          o.style.display = "none";
+        }, 2200);
+        setTimeout(() => (busy = false), 2600);
+      }
+      if (pin) show();
+    </script>
+  </body>
+</html>

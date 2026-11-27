@@ -1,25 +1,27 @@
-# نظام تسجيل الزوار – بصمات فن (قاعدة البيانات في Google Drive)
+# نظام تسجيل الزوار والفنانين – بصمات فن
 
-الملفات: `index.html` (التسجيل) · `gate.html` (البوابة) · `admin.html` (لوحة الإدارة) · `style.css` · `config.js` · `logo.png` · `pat.png` · `backend/Code.gs`
+## الملفات
+- صفحات: `index.html` (الضيوف) · `artist.html` (الفنانون) · `gate.html` (البوابة) · `walkin.html` (التسجيل الفوري) · `admin.html` (الإدارة)
+- ملفات مشتركة: `style.css` · `common.js` · `register.js` · `config.js`
+- صور: `logo-teal.png` · `emboss.png` · `strip-guest.png` · `band-artist.png`
+- الخلفية: `backend/Code.gs` (يُلصق في Apps Script، لا يعمل على GitHub)
 
-## 1) قاعدة البيانات (Google Sheet في درايفك)
-1. drive.google.com ← جديد ← Google Sheets (سمّيه مثلاً: زوار بصمات فن).
-2. الإضافات (Extensions) ← Apps Script. احذفي الكود الموجود والصقي محتوى `backend/Code.gs` ← احفظي.
-3. اختاري الدالة `setup` من القائمة العلوية ← Run. اسمحي بالصلاحيات (Advanced ← Go to project ← Allow).
-4. افتحي Execution log وانسخي **كلمة مرور الإدارة** و**رمز البوابة** الظاهرين.
+## 1) Apps Script
+1. افتحي ملف Google Sheets ← الإضافات ← برمجة التطبيقات.
+2. امسحي كل الكود القديم والصقي محتوى `backend/Code.gs` الجديد ← احفظي.
+3. شغّلي الدالة `setup` (وافقي على الأذونات). من سجل التنفيذ انسخي: كلمة مرور الإدارة، ورمز البوابة، ورمز الفنانين.
+4. نشر ← نشر جديد (أو إدارة عمليات النشر ← تعديل ← إصدار جديد) ← تطبيق ويب ← Execute as: Me ← Who has access: Anyone. انسخي الرابط (ينتهي بـ /exec).
 
-## 2) النشر
-Deploy ← New deployment ← النوع Web app ← Execute as: **Me** ← Who has access: **Anyone** ← Deploy. انسخي الرابط (ينتهي بـ `/exec`) وضعيه في `config.js`.
+## 2) GitHub
+1. افتحي `config.js` وضعي الرابط: `window.CFG={API:'الرابط'};` ثم احفظي.
+2. ارفعي كل الملفات دفعة واحدة (مع مجلد backend) واستبدلي القديمة.
+3. احذفي الملفات القديمة غير المستخدمة إن وُجدت: `pat.png` · `pat-teal.png` · `logo.png` · `setup.sql`.
+4. Settings ← Pages ← main.
 
-## 3) GitHub Pages
-ارفعي كل الملفات دفعة واحدة ← Settings ← Pages ← main.
-- `…/index.html` للزوار · `…/gate.html` للبوابة (رمز البوابة) · `…/admin.html` للإدارة (كلمة مرور الإدارة).
+## 3) أول استخدام
+1. افتحي `admin.html` بكلمة مرور الإدارة ← معرض جديد ← حفظ وتفعيل. تجدين هناك الروابط كلها ورمز الفنانين ورمز البوابة.
+2. جرّبي: تسجيل ضيف بإيميلك، وتسجيل فنان برمز الفنانين، ومسح البطاقة في البوابة الصحيحة والخاطئة، وتسجيلاً فورياً.
 
-## 4) المعرض
-من `admin.html` ← معرض جديد ← الاسمان والتاريخ ← حفظ وتفعيل. الأرقام التسلسلية تبدأ من 1 لكل معرض.
-
-## 5) سعة الإيميل
-الحساب المجاني على Gmail: نحو 100 رسالة يومياً. حساب Google Workspace: نحو 1500. لرفع السعة مجاناً إلى نحو 300 فعّلي Brevo: أضيفي في Project Settings ← Script properties الخصائص `BREVO_KEY` و`SENDER_EMAIL` و`SENDER_NAME`.
-
-## 6) بعد أي تعديل على Code.gs
-Deploy ← Manage deployments ← Edit ← Version: New version ← Deploy (الرابط لا يتغير).
+## ملاحظات
+- حد الإيميل لحساب Gmail العادي نحو 100 رسالة يومياً: رسالة رمز التحقق لكل زائر، ونسخة البطاقة بالإيميل اختيارية بزر.
+- إن غيّرتِ `Code.gs` لاحقاً فانشري إصداراً جديداً (الرابط لا يتغير).

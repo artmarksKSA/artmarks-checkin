@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#F1ECDA" />
+    <title>ArtMarks</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="staff">
+    <header><img src="logo-teal.png" alt="بصمات فن" /></header>
+    <main>
+      <section id="lg" class="panel">
+        <h1>التسجيل الفوري</h1>
+        <p class="sub">للموظفين فقط، لزائر وصل دون تسجيل مسبق.</p>
+        <label>رمز البوابة</label><input id="pin" type="password" autocomplete="off" />
+        <div class="err" id="er"></div>
+        <button class="btn" id="in">دخول</button>
+      </section>
+      <section id="fm" class="panel hide">
+        <h1>تسجيل زائر جديد</h1>
+        <div class="seg">
+          <button id="tg" class="on">ضيف</button><button id="ta">فنان مشارك</button>
+        </div>
+        <label>الاسم الكامل</label><input id="nm" autocomplete="off" /> <label>رقم الجوال</label
+        ><input id="ph" type="tel" autocomplete="off" /> <label>البريد الإلكتروني (اختياري)</label
+        ><input id="em" type="email" autocomplete="off" />
+        <div class="err" id="e1"></div>
+        <button class="btn" id="go">تسجيل وإصدار البطاقة</button>
+        <a href="gate.html"><button class="btn l">العودة إلى البوابة</button></a>
+      </section>
+      <section id="rs" class="panel hide">
+        <div class="ok" id="msg"></div>
+        <canvas id="cv"></canvas>
+        <div class="seg"><button id="cl">البطاقة بالإنجليزية</button></div>
+        <button class="btn" id="dl">حفظ البطاقة</button>
+        <button class="btn l" id="sh">مشاركة / واتساب</button>
+        <button class="btn l hide" id="ml">إرسال إلى البريد</button>
+        <div class="ok" id="mm"></div>
+        <div class="err" id="e3"></div>
+        <button class="btn l" id="nw">زائر جديد</button>
+      </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+    <script src="config.js"></script>
+    <script src="common.js"></script>
+    <script>
+      const $ = (i) => document.getElementById(i),
+        A = AM;
+      let pin = sessionStorage.getItem("pin") || "",
+        type = "guest",
+        last = null,
+        CL = "ar",
+        hasMail = false;
+      async function enter() {
+        const r = await A.api("stats", { pin });
+        if (!r.ok) {
+          sessionStorage.removeItem("pin");
+          $("er").textContent = "الرمز غير صحيح";
+          return;
+        }
+        $("lg").classList.add("hide");
+        $("fm").classList.remove("hide");
+      }
+      $("in").onclick = () => {
+        $("er").textContent = "";
+        pin = $("pin").value.trim();
+        sessionStorage.setItem("pin", pin);
+        enter();
+      };
+      $("tg").onclick = () => {
+        type = "guest";
+        $("tg").classList.add("on");
+        $("ta").classList.remove("on");
+      };
+      $("ta").onclick = () => {
+        type = "artist";
+        $("ta").classList.add("on");
+        $("tg").classList.remove("on");
+      };
+      $("go").onclick = async () => {
+        const nm = A.clean.name($("nm").value),
+          ph = A.clean.phone($("ph").value),
+          em = A.clean.email($("em").value),
+          e = $("e1");
+        e.textContent = "";
+        if (!A.okName(nm)) return (e.textContent = "اكتبي الاسم كاملاً (اسمان على الأقل)");
+        if (!A.okPhone(ph)) return (e.textContent = "رقم الجوال غير صحيح");
+        if (em && !A.okMail(em)) return (e.textContent = "البريد الإلكتروني غير صحيح");
+        $("go").disabled = true;
+        const r = await A.api("walkin", { pin, name: nm, phone: ph, email: em, type });
+        $("go").disabled = false;
+        if (!r.ok)
+          return (e.textContent =
+            r.err == "closed"
+              ? "لا يوجد معرض مفعّل"
+              : r.err == "bad"
+                ? "تحقق من البيانات"
+                : "تعذّر التسجيل، حاول مجدداً");
+        last = r.card;
+        hasMail = r.email;
+        CL = "ar";
+        $("cl").textContent = "البطاقة بالإنجليزية";
+        $("msg").textContent =
+          (r.existing ? "مسجّل مسبقاً — " : "") + "تم تسجيل الدخول: " + r.card.name;
+        $("ml").classList.toggle("hide", !hasMail);
+        await A.drawCard($("cv"), last, CL);
+        $("fm").classList.add("hide");
+        $("rs").classList.remove("hide");
+      };
+      $("cl").onclick = async () => {
+        CL = CL === "ar" ? "en" : "ar";
+        $("cl").textContent = CL === "ar" ? "البطاقة بالإنجليزية" : "البطاقة بالعربية";
+        await A.drawCard($("cv"), last, CL);
+      };
+      $("dl").onclick = () => A.download($("cv"), last);
+      $("sh").onclick = () => A.share($("cv"), last, CL);
+      $("ml").onclick = async () => {
+        $("ml").disabled = true;
+        const r = await A.mailCard($("cv"), last);
+        if (r.ok) {
+          $("mm").textContent = "أُرسلت البطاقة إلى البريد";
+          $("ml").classList.add("hide");
+        } else {
+          $("ml").disabled = false;
+          $("e3").textContent = "تعذّر الإرسال";
+        }
+      };
+      $("nw").onclick = () => {
+        last = null;
+        ["nm", "ph", "em"].forEach((i) => ($(i).value = ""));
+        $("mm").textContent = "";
+        $("e3").textContent = "";
+        $("ml").disabled = false;
+        $("rs").classList.add("hide");
+        $("fm").classList.remove("hide");
+      };
+      if (pin) enter();
+    </script>
+  </body>
+</html>
