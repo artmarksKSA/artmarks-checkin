@@ -48,6 +48,13 @@
             رمز البوابة: أعطيه لموظفي المدخل ليفتحوا به صفحة المسح والتسجيل الفوري:
           </p>
           <div class="code" id="gp"></div>
+          <input
+            id="ngp"
+            inputmode="numeric"
+            placeholder="رمز جديد من 4 إلى 8 أرقام (فارغ = رمز عشوائي)"
+            style="direction: ltr"
+          />
+          <button class="btn l" id="sgp">تغيير رمز البوابة</button>
           <div class="err" id="er3"></div>
         </section>
         <section class="panel">
@@ -165,6 +172,13 @@
         const r = await api("set_artist_code", { code: $("nac").value });
         if (!r.ok) return ($("er3").textContent = "الرمز يجب أن يكون من 4 إلى 12 حرفاً أو رقماً");
         $("nac").value = "";
+        load();
+      };
+      $("sgp").onclick = async () => {
+        $("er3").textContent = "";
+        const r = await api("set_gate_pin", { code: $("ngp").value });
+        if (!r.ok) return ($("er3").textContent = "الرمز يجب أن يكون من 4 إلى 8 أرقام");
+        $("ngp").value = "";
         load();
       };
       $("sv").onclick = async () => {

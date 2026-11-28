@@ -48,6 +48,67 @@ const VI_H = [
 const isT = (v) => v === true || String(v).toUpperCase() === "TRUE";
 const typeOf = (r) => (String(r[8] || "guest") === "artist" ? "artist" : "guest");
 
+const SC_H = ["time", "event_id", "gate", "ticket", "status", "name", "serial", "type"];
+function sheetOf(name, headers) {
+  const s = SS();
+  let sh = s.getSheetByName(name);
+  if (!sh) {
+    sh = s.insertSheet(name);
+    if (headers) sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+  }
+  return sh;
+}
+function logScan(ev, gate, t, status, row) {
+  try {
+    sheetOf("Scans", SC_H).appendRow([
+      new Date().toISOString(),
+      ev ? ev.id : "",
+      gate || "",
+      String(t).slice(0, 36),
+      status,
+      row ? row[2] : "",
+      row ? row[1] : "",
+      row ? typeOf(row) : "",
+    ]);
+  } catch (e) {}
+}
+function buildDashboard() {
+  const s = SS();
+  if (s.getSheetByName("Dashboard")) return;
+  const d = s.insertSheet("Dashboard", 0);
+  const rows = [
+    ["لوحة المتابعة (تُحدَّث تلقائياً)", "", "", ""],
+    ["", "", "", ""],
+    [
+      "المعرض الفعّال",
+      '=IFERROR(INDEX(Events!B:B,MATCH(TRUE,Events!E:E,0)),"لا يوجد معرض مفعّل")',
+      "",
+      "",
+    ],
+    ["معرّف المعرض", '=IFERROR(INDEX(Events!A:A,MATCH(TRUE,Events!E:E,0)),"")', "", ""],
+    ["", "", "", ""],
+    ["", "المسجلون", "الداخلون", "المتبقون"],
+    [
+      "الضيوف",
+      '=COUNTIFS(Visitors!A:A,$B$4,Visitors!I:I,"guest")',
+      '=COUNTIFS(Visitors!A:A,$B$4,Visitors!I:I,"guest",Visitors!H:H,"<>")',
+      "=B7-C7",
+    ],
+    [
+      "الفنانون",
+      '=COUNTIFS(Visitors!A:A,$B$4,Visitors!I:I,"artist")',
+      '=COUNTIFS(Visitors!A:A,$B$4,Visitors!I:I,"artist",Visitors!H:H,"<>")',
+      "=B8-C8",
+    ],
+    ["الإجمالي", "=B7+B8", "=C7+C8", "=D7+D8"],
+    ["", "", "", ""],
+    ["تسجيل فوري عند المدخل", '=COUNTIFS(Visitors!A:A,$B$4,Visitors!J:J,"walkin")', "", ""],
+    ["بطاقات مكررة (مُسحت سابقاً)", '=COUNTIFS(Scans!B:B,$B$4,Scans!E:E,"duplicate")', "", ""],
+    ["بطاقات في بوابة خاطئة", '=COUNTIFS(Scans!B:B,$B$4,Scans!E:E,"wrong_gate")', "", ""],
+    ["بطاقات غير صالحة", '=COUNTIFS(Scans!B:B,$B$4,Scans!E:E,"invalid")', "", ""],
+  ];
+  d.getRange(1, 1, rows.length, 4).setValues(rows);
+}
 function setup() {
   const s = SS();
   const ev = s.getSheetByName("Events") || s.insertSheet("Events");
@@ -58,8 +119,13 @@ function setup() {
   vi.getRange("A:A").setNumberFormat("@");
   vi.getRange("C:F").setNumberFormat("@");
   vi.getRange("I:K").setNumberFormat("@");
+  const sc = sheetOf("Scans", SC_H);
+  sc.getRange(1, 1, 1, SC_H.length).setValues([SC_H]);
+  sc.getRange("B:D").setNumberFormat("@");
+  buildDashboard();
   s.getSheets().forEach((x) => {
-    if (!["Events", "Visitors"].includes(x.getName()) && s.getSheets().length > 2) s.deleteSheet(x);
+    if (x.getLastRow() === 0 && /^(Sheet ?1|ورقة ?1|الورقة ?1)$/.test(x.getName()))
+      s.deleteSheet(x);
   });
   if (!P.getProperty("ADMIN_PASS")) P.setProperty("ADMIN_PASS", rnd(10));
   if (!P.getProperty("GATE_PIN"))
@@ -185,6 +251,13 @@ function route(d) {
     if (!/^[A-Z0-9]{4,12}$/.test(code)) return { ok: false, err: "bad" };
     P.setProperty("ARTIST_CODE", code);
     return { ok: true, artist_code: code };
+  }
+  if (a === "set_gate_pin") {
+    let c = String(d.code || "").trim();
+    if (!c) c = String(100000 + (parseInt(rnd(6), 16) % 900000));
+    if (!/^\d{4,8}$/.test(c)) return { ok: false, err: "bad" };
+    P.setProperty("GATE_PIN", c);
+    return { ok: true, gate_pin: c };
   }
   if (a === "save_event") {
     const n1 = String(d.name_ar || "").trim(),
@@ -463,18 +536,29 @@ function checkin(t, gate) {
   L.waitLock(10000);
   try {
     const ev = activeEvent();
-    if (!ev) return { ok: true, status: "invalid" };
+    if (!ev) {
+      logScan(null, gate, t, "invalid", null);
+      return { ok: true, status: "invalid" };
+    }
     const sh = SS().getSheetByName("Visitors"),
       v = sh.getDataRange().getValues();
     for (let i = 1; i < v.length; i++)
       if (String(v[i][5]) === t && String(v[i][0]) === ev.id) {
         const type = typeOf(v[i]),
           base = { ok: true, type: type, name: v[i][2], serial: v[i][1] };
-        if (gate && gate !== type) return Object.assign(base, { status: "wrong_gate" });
-        if (v[i][7]) return Object.assign(base, { status: "duplicate" });
+        if (gate && gate !== type) {
+          logScan(ev, gate, t, "wrong_gate", v[i]);
+          return Object.assign(base, { status: "wrong_gate" });
+        }
+        if (v[i][7]) {
+          logScan(ev, gate, t, "duplicate", v[i]);
+          return Object.assign(base, { status: "duplicate" });
+        }
         sh.getRange(i + 1, 8).setValue(new Date().toISOString());
+        logScan(ev, gate, t, "ok", v[i]);
         return Object.assign(base, { status: "ok" });
       }
+    logScan(ev, gate, t, "invalid", null);
     return { ok: true, status: "invalid" };
   } finally {
     L.releaseLock();
