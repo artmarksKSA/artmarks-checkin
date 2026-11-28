@@ -282,3 +282,129 @@ canvas {
   padding: 10px;
   margin: 8px 0;
 }
+
+/* ===== شاشة البوابة ===== */
+a.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  margin-top: 8px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: var(--t);
+  color: #fff;
+  font-weight: 800;
+  text-decoration: none;
+}
+a.btn.l {
+  background: transparent;
+  color: var(--t);
+  border: 1.5px solid var(--t);
+}
+.gbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: start;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 16px 8px;
+}
+.gbar img {
+  height: 54px;
+  margin: 0;
+}
+.gbar .chip {
+  flex: 1;
+  text-align: center;
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--t);
+}
+.gbar button {
+  position: static;
+  min-height: 38px;
+  padding: 4px 16px;
+  border-radius: 999px;
+}
+body.staff .gbar + main {
+  padding-top: 8px;
+}
+.kpi {
+  display: flex;
+  gap: 8px;
+}
+.kpi div {
+  flex: 1;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 4px;
+  text-align: center;
+}
+.kpi span {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--soft);
+}
+.kpi b {
+  font-size: 1.7rem;
+  color: var(--t);
+}
+.prog {
+  height: 6px;
+  background: #d9e6e3;
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 10px 0 12px;
+}
+.prog i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--t);
+  transition: width 0.4s;
+}
+.cam {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 8px;
+  box-shadow: 0 8px 28px #03515722;
+}
+#rd video {
+  border-radius: 12px;
+}
+.hint {
+  text-align: center;
+  color: var(--soft);
+  margin: 12px 0 0;
+}
+.acts {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+.acts a {
+  flex: 1;
+}
+#ov svg {
+  margin-bottom: 8px;
+}
+#ov .ot {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.5;
+}
+#ov .on {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-top: 8px;
+}
+#ov .om {
+  margin-top: 12px;
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: #ffffff2b;
+  font-size: 1.05rem;
+  font-weight: 400;
+}
