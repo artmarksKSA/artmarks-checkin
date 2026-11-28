@@ -15,14 +15,20 @@
     <header><img src="logo-teal.png" alt="بصمات فن" /></header>
     <main>
       <section id="lg" class="panel">
-        <h1>التسجيل الفوري</h1>
-        <p class="sub">للموظفين فقط، لزائر وصل دون تسجيل مسبق.</p>
-        <label>رمز البوابة</label><input id="pin" type="password" autocomplete="off" />
+        <h1>تسجيل زائر عند المدخل</h1>
+        <p class="sub">
+          للزائر الذي حضر إلى المعرض دون تسجيل مسبق. يكتب الموظف بياناته هنا، فتظهر بطاقته ويُسجَّل
+          دخوله فوراً. يلزم رمز البوابة نفسه الذي أعطته الإدارة لموظفي المدخل.
+        </p>
+        <label>رمز البوابة (6 أرقام)</label><input id="pin" type="password" autocomplete="off" />
         <div class="err" id="er"></div>
         <button class="btn" id="in">دخول</button>
       </section>
       <section id="fm" class="panel hide">
-        <h1>تسجيل زائر جديد</h1>
+        <h1>بيانات الزائر</h1>
+        <p class="sub">
+          اكتب بيانات الزائر كما يعطيها لك. البريد اختياري: إن كتبته أُرسلت له نسخة من البطاقة.
+        </p>
         <div class="seg">
           <button id="tg" class="on">ضيف</button><button id="ta">فنان مشارك</button>
         </div>
@@ -31,7 +37,7 @@
         ><input id="em" type="email" autocomplete="off" />
         <div class="err" id="e1"></div>
         <button class="btn" id="go">تسجيل وإصدار البطاقة</button>
-        <a href="gate.html"><button class="btn l">العودة إلى البوابة</button></a>
+        <a class="btn l" href="gate.html">العودة إلى البوابة</a>
       </section>
       <section id="rs" class="panel hide">
         <div class="ok" id="msg"></div>

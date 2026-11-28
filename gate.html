@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="theme-color" content="#F1ECDA" />
-    <title>ArtMarks</title>
+    <title>ArtMarks Gate</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&display=swap"
       rel="stylesheet"
@@ -12,31 +12,50 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body class="staff">
-    <header><img src="logo-teal.png" alt="بصمات فن" /></header>
+    <header id="hbig"><img src="logo-teal.png" alt="بصمات فن" /></header>
+    <header id="hbar" class="gbar hide">
+      <img src="logo-teal.png" alt="بصمات فن" />
+      <div class="chip" id="gt"></div>
+      <button id="out" class="l">خروج</button>
+    </header>
     <main>
       <section id="lg" class="panel">
-        <h1>دخول فريق البوابة</h1>
-        <label>رمز البوابة</label><input id="pin" type="password" autocomplete="off" />
+        <h1>دخول موظفي المدخل</h1>
+        <p class="sub">
+          هذه الصفحة لموظفي المعرض الذين يقفون عند المدخل ويمسحون بطاقات الزوار بكاميرا الجوال. أدخل
+          رمز البوابة الذي أعطتك إياه الإدارة.
+        </p>
+        <label>رمز البوابة (6 أرقام)</label>
+        <input id="pin" type="password" autocomplete="off" inputmode="numeric" />
         <div class="err" id="er"></div>
         <button class="btn" id="in">دخول</button>
       </section>
+
       <section id="pick" class="panel hide">
         <h1>اختاري البوابة</h1>
-        <p class="sub">افتحي الرابط المناسب لهذا الجهاز.</p>
-        <a href="?type=guest"><button class="btn">بوابة الضيوف</button></a>
-        <a href="?type=artist"><button class="btn">بوابة الفنانين المشاركين</button></a>
-        <a href="walkin.html"><button class="btn l">التسجيل الفوري</button></a>
+        <p class="sub">
+          بوابة الضيوف لمسح بطاقات الزوار، وبوابة الفنانين لمسح بطاقات الفنانين المشاركين، والتسجيل
+          الفوري لزائر حضر دون تسجيل مسبق.
+        </p>
+        <a class="btn" href="?type=guest">بوابة الضيوف</a>
+        <a class="btn" href="?type=artist">بوابة الفنانين المشاركين</a>
+        <a class="btn l" href="walkin.html">التسجيل الفوري</a>
       </section>
-      <section id="app" class="panel hide">
-        <h1 id="gt"></h1>
-        <div id="st">
-          <div>المسجلون<b id="a">0</b></div>
-          <div>الداخلون<b id="b">0</b></div>
+
+      <section id="app" class="hide">
+        <div class="kpi">
+          <div><span>المسجلون</span><b id="a">0</b></div>
+          <div><span>الداخلون</span><b id="b">0</b></div>
+          <div><span>المتبقون</span><b id="c">0</b></div>
         </div>
-        <div id="rd"></div>
+        <div class="prog"><i id="pg"></i></div>
+        <div class="cam"><div id="rd"></div></div>
+        <p class="hint">وجّهي الكاميرا إلى الباركود الكبير في وسط البطاقة</p>
         <div class="err" id="er2"></div>
-        <a href="walkin.html"><button class="btn l">تسجيل فوري لزائر جديد</button></a>
-        <button class="btn l" id="out">خروج</button>
+        <div class="acts">
+          <a class="btn l" href="walkin.html">تسجيل فوري</a>
+          <a class="btn l" href="gate.html">تبديل البوابة</a>
+        </div>
       </section>
     </main>
     <div id="ov"></div>
@@ -52,12 +71,23 @@
       let pin = sessionStorage.getItem("pin") || "",
         busy = false,
         started = false;
+      const SV = (p) =>
+        '<svg viewBox="0 0 24 24" width="104" height="104" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="' +
+        p +
+        '"/></svg>';
+      const ICON = {
+        ok: SV("M4 12.5l5 5L20 6.5"),
+        bad: SV("M6 6l12 12M18 6L6 18"),
+        warn: SV("M12 4.5v10M12 19v.5"),
+      };
       async function stats() {
         const r = await api("stats", { pin });
         if (!r.ok) return false;
         const s = r[gate || "guest"];
         $("a").textContent = s.total;
         $("b").textContent = s.inside;
+        $("c").textContent = Math.max(0, s.total - s.inside);
+        $("pg").style.width = (s.total ? Math.round((s.inside / s.total) * 100) : 0) + "%";
         return true;
       }
       async function show() {
@@ -71,6 +101,8 @@
           $("pick").classList.remove("hide");
           return;
         }
+        $("hbig").classList.add("hide");
+        $("hbar").classList.remove("hide");
         $("gt").textContent = "بوابة " + NM[gate];
         $("app").classList.remove("hide");
         if (started) return;
@@ -78,7 +110,7 @@
         const sc = new Html5Qrcode("rd");
         sc.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 250, height: 250 } },
+          { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1 },
           onScan,
           () => {},
         ).catch(() => ($("er2").textContent = "اسمحي للمتصفح باستخدام الكاميرا"));
@@ -94,39 +126,54 @@
         sessionStorage.removeItem("pin");
         location.href = location.pathname;
       };
+      function flash(bg, icon, title, name, meta) {
+        const o = $("ov");
+        o.style.background = bg;
+        o.innerHTML = icon;
+        const t = document.createElement("div");
+        t.className = "ot";
+        t.innerHTML = title;
+        o.append(t);
+        if (name) {
+          const n = document.createElement("div");
+          n.className = "on";
+          n.textContent = name;
+          o.append(n);
+        }
+        if (meta) {
+          const m = document.createElement("div");
+          m.className = "om";
+          m.textContent = meta;
+          o.append(m);
+        }
+        o.style.display = "flex";
+        setTimeout(() => {
+          o.style.display = "none";
+        }, 2200);
+      }
       async function onScan(t) {
         if (busy || !/^[0-9a-f-]{36}$/i.test(t)) return;
         busy = true;
         const r = await api("checkin", { pin, ticket: t, gate });
         const d = r && r.ok ? r : { status: "invalid" };
-        const other = d.type === "artist" ? "الفنانين المشاركين" : "الضيوف";
-        const m = {
-          ok: ["#1b7f3b", "مسموح بالدخول"],
-          duplicate: ["#1f5fa8", "تم مسحها سابقاً"],
-          invalid: ["#b3261e", "بطاقة غير صالحة"],
-          wrong_gate: [
+        const kind = d.type === "artist" ? "فنان مشارك" : "ضيف";
+        const meta = d.name ? kind + " · " + AM.pad(d) : "";
+        if (d.status === "ok") flash("#1b7f3b", ICON.ok, "مسموح بالدخول", d.name, meta);
+        else if (d.status === "duplicate")
+          flash("#1f5fa8", ICON.warn, "تم مسحها سابقاً", d.name, meta);
+        else if (d.status === "wrong_gate")
+          flash(
             "#6b3fa0",
-            "هذه بطاقة " + (d.type === "artist" ? "فنان" : "ضيف") + "<br>توجّه إلى بوابة " + other,
-          ],
-        }[d.status] || ["#b3261e", "بطاقة غير صالحة"];
-        const o = $("ov");
-        o.style.background = m[0];
-        o.innerHTML = "";
-        const h = document.createElement("div");
-        h.innerHTML = m[1];
-        o.append(h);
-        if (d.name) {
-          o.append(d.name);
-          o.append(document.createElement("br"));
-          const s = document.createElement("small");
-          s.textContent = (d.type === "artist" ? "فنان مشارك" : "ضيف") + " · " + AM.pad(d);
-          o.append(s);
-        }
-        o.style.display = "flex";
+            ICON.warn,
+            "هذه بطاقة " +
+              (d.type === "artist" ? "فنان" : "ضيف") +
+              "<br>توجّه إلى بوابة " +
+              (d.type === "artist" ? NM.artist : NM.guest),
+            d.name,
+            meta,
+          );
+        else flash("#b3261e", ICON.bad, "بطاقة غير صالحة", "", "");
         stats();
-        setTimeout(() => {
-          o.style.display = "none";
-        }, 2200);
         setTimeout(() => (busy = false), 2600);
       }
       if (pin) show();
